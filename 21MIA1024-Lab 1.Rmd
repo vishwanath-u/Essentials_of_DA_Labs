@@ -1,0 +1,105 @@
+---
+title: "EDA_LAB - 1"
+author: "Vishwanath U 21MIA1024"
+date: "2025-01-16"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(caret)
+library(ggplot2)
+library(corrplot)
+library(dplyr)
+library(psych)
+library(caTools)
+```
+
+```{r}
+health_df = read.csv("/Users/vichu/Downloads/synthetic_health_data.csv")
+head(health_df)
+```
+```{r}
+health_df$Age = round(health_df$Age,0)
+health_df$Sleep_Hours = round(health_df$Sleep_Hours,0)
+head(health_df)
+```
+```{r}
+subset_df = health_df %>% select(Age,BMI,Exercise_Frequency,Diet_Quality,Sleep_Hours,Smoking_Status,Alcohol_Consumption,Health_Score)
+```
+
+```{r}
+correal = cor(subset_df,use = "complete.obs", method = "pearson")
+correal
+```
+```{r}
+corrplot(correal, method = "circle", type = "lower", 
+         col = colorRampPalette(c("blue", "white", "red"))(200), 
+         tl.cex = 0.8, tl.col = "black", 
+         number.cex = 0.7, addCoef.col = "black")
+```
+```{r}
+pairs(subset_df)
+```
+```{r}
+set.seed(123)
+split = sample.split(subset_df$Health_Score, SplitRatio = 0.8)
+train_data = subset(subset_df, split == TRUE)
+test_data = subset(subset_df, split == FALSE)
+
+cat("Train Set Rows:", nrow(train_data), "\n")
+cat("Test Set Rows:", nrow(test_data), "\n")
+```
+
+```{r}
+# Model Building for the split train data
+
+health_model = lm(Health_Score ~ Age + BMI + Exercise_Frequency + Diet_Quality + Sleep_Hours + Smoking_Status + Alcohol_Consumption, data = train_data)
+summary(health_model)
+health_model$coefficients
+```
+
+```{r}
+predictions = predict(health_model, newdata = test_data)
+
+threshold = 70
+predictions_class = ifelse(predictions > threshold, "High", "Low")
+actual_class = ifelse(test_data$Health_Score > threshold, "High", "Low")
+
+conf_matrix = confusionMatrix(factor(predictions_class), factor(actual_class))
+print(conf_matrix)
+
+accuracy = sum(predictions_class == actual_class) / length(actual_class)
+cat("Accuracy:", accuracy, "\n")
+
+names(cm_data) = c("Actual", "Predicted", "Frequency")
+
+
+ggplot(cm_data, aes(Actual, Predicted, fill = Frequency)) +
+  geom_tile() +
+  scale_fill_gradient(low = "white", high = "blue") +
+  geom_text(aes(label = Frequency), vjust = 1) +
+  theme_minimal() +
+  labs(x = "Actual", y = "Predicted", title = "Confusion Matrix") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+```{r}
+predictions = predict(health_model, newdata = test_data)
+actual = test_data$Health_Score
+
+rsq = cor(actual, predictions)^2
+cat("R-squared: ", rsq, "\n")
+
+mae = mean(abs(actual - predictions))
+cat("Mean Absolute Error (MAE): ", mae, "\n")
+
+mse = mean((actual - predictions)^2)
+cat("Mean Squared Error (MSE): ", mse, "\n")
+
+rmse = sqrt(mse)
+cat("Root Mean Squared Error (RMSE): ", rmse, "\n")
+```
+
