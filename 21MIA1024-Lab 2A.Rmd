@@ -1,0 +1,79 @@
+---
+title: "Lab 2A"
+author: "Vishwanath U 21MIA1024"
+date: "2025-02-03"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(caret)
+library(ggplot2)
+library(dplyr)
+
+train <- read.csv("/Users/vichu/Downloads/archive/Train.csv")
+test <- read.csv("/Users/vichu/Downloads/archive/Test.csv")
+
+train$DATE <- as.Date(train$DATE, format="%Y-%m-%d")
+test$DATE <- as.Date(test$DATE, format="%Y-%m-%d")
+
+str(train)
+str(test)
+```
+```{r}
+set.seed(123)
+trainIndex <- createDataPartition(train$MALICIOUS_OFFENSE, p = 0.8, list = FALSE)
+train_data <- train[trainIndex, ]
+test_data <- train[-trainIndex, ]
+```
+
+```{r}
+anova_result <- aov(MALICIOUS_OFFENSE ~ factor(X_1), data = train_data)
+summary(anova_result)
+```
+```{r}
+model <- glm(MALICIOUS_OFFENSE ~ X_1 + X_2 + X_3 + X_4 + X_5 + X_6 + X_7 + X_8 + X_9 + X_10 + X_11 + X_12 + X_13 + X_14 + X_15, data = train_data, family = binomial)
+summary(model)
+```
+```{r}
+predictions <- predict(model, test_data, type = "response")
+predictions_class <- ifelse(predictions > 0.5, 1, 0)
+```
+
+```{r}
+conf_matrix <- confusionMatrix(factor(predictions_class), factor(test_data$MALICIOUS_OFFENSE))
+print(conf_matrix)
+```
+```{r}
+ggplot(train, aes(x = MALICIOUS_OFFENSE)) + geom_bar() + 
+  labs(title = "Distribution of Malicious Offense", x = "Malicious Offense", y = "Frequency")
+
+```
+```{r}
+ggplot(train, aes(x = MALICIOUS_OFFENSE)) + geom_bar() + 
+  labs(title = "Distribution of Malicious Offense", x = "Malicious Offense", y = "Frequency")
+
+```
+```{r}
+library(caret)
+library(ggplot2)
+library(reshape2)
+
+conf_matrix <- confusionMatrix(factor(predictions_class), factor(test_data$MALICIOUS_OFFENSE))
+
+# Convert confusion matrix to a data frame for visualization
+conf_matrix_df <- as.data.frame(conf_matrix$table)
+
+# Plotting the confusion matrix using ggplot2
+ggplot(conf_matrix_df, aes(x = Prediction, y = Reference)) +
+  geom_tile(aes(fill = Freq), color = "white") +
+  geom_text(aes(label = Freq), vjust = 1) +
+  scale_fill_gradient(low = "white", high = "blue") +
+  labs(title = "Confusion Matrix", x = "Predicted", y = "Actual") +
+  theme_minimal()
+
+```
+
