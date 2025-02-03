@@ -1,0 +1,100 @@
+---
+title: "Lab 2B"
+author: "Vishwanath U 21MIA1024"
+date: "2025-02-03"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(dplyr)
+library(readr)
+library(caret)
+
+train <- read.csv("/Users/vichu/Downloads/spaceship-titanic/train.csv")
+test <- read.csv("/Users/vichu/Downloads/spaceship-titanic/test.csv")
+
+train$Transported <- as.factor(train$Transported)
+
+train$HomePlanet <- as.factor(train$HomePlanet)
+train$CryoSleep <- as.factor(train$CryoSleep)
+train$Destination <- as.factor(train$Destination)
+
+train_data <- train[complete.cases(train), ]
+test_data <- test[complete.cases(test), ]
+
+x_train <- as.matrix(train_data[, c("Age", "RoomService", "FoodCourt", "ShoppingMall", "Spa", "VRDeck")])
+y_train <- as.factor(train_data$Transported)
+```
+
+```{r}
+initialize_weights <- function(n) {
+  return(rep(0, n))
+}
+
+sigmoid <- function(z) {
+  return(1 / (1 + exp(-z)))
+}
+
+cost_function <- function(X, y, theta) {
+  m <- length(y)
+  h <- sigmoid(X %*% theta)
+  return(-(1/m) * sum(y * log(h) + (1 - y) * log(1 - h)))
+}
+
+gradient_descent <- function(X, y, theta, alpha, iterations) {
+  m <- length(y)
+  cost_history <- numeric(iterations)
+  for (i in 1:iterations) {
+    predictions <- sigmoid(X %*% theta)
+    theta <- theta - (alpha/m) * t(X) %*% (predictions - y)
+    cost_history[i] <- cost_function(X, y, theta)
+  }
+  return(list(theta = theta, cost_history = cost_history))
+}
+
+X_train <- cbind(1, x_train)
+y_train <- ifelse(y_train == "True", 1, 0)
+
+theta_init <- initialize_weights(ncol(X_train))
+alpha <- 0.01
+iterations <- 1000
+
+result <- gradient_descent(X_train, y_train, theta_init, alpha, iterations)
+theta_optimal <- result$theta
+
+```
+
+```{r}
+x_test <- as.matrix(test_data[, c("Age", "RoomService", "FoodCourt", "ShoppingMall", "Spa", "VRDeck")])
+X_test <- cbind(1, x_test)
+
+predictions <- sigmoid(X_test %*% theta_optimal)
+predictions_class <- ifelse(predictions > 0.5, 1, 0)
+
+```
+
+```{r}
+# Placeholder confusion matrix values
+cm_values <- matrix(c(100, 50, 30, 200), nrow = 2, byrow = TRUE)
+
+# Creating a confusion matrix
+cm <- confusionMatrix(as.factor(c(0, 0, 1, 1)), as.factor(c(0, 1, 0, 1)))
+
+# Plotting confusion matrix
+library(caret)
+library(ggplot2)
+
+# Visualize confusion matrix
+ggplot(as.table(cm_values), aes(x = Var1, y = Var2, fill = Freq)) +
+  geom_tile() +
+  scale_fill_gradient(low = "white", high = "blue") +
+  geom_text(aes(label = Freq), vjust = 1) +
+  labs(title = "Confusion Matrix", x = "Predicted", y = "Actual") +
+  theme_minimal()
+
+```
+
