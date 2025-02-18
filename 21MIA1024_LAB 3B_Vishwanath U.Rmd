@@ -1,0 +1,69 @@
+---
+title: "Hierarchical Clustering"
+author: "Vishwanath U 21MIA1024"
+date: "2025-02-18"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(quantmod)
+library(TTR)
+library(forecast)
+library(ggplot2)
+library(tseries)
+```
+
+```{r}
+getSymbols("TITAN.NS", src = "yahoo", from = "2020-01-01", to = Sys.Date())
+data <- na.omit(data.frame(Date = index(TITAN.NS), Close = as.numeric(Cl(TITAN.NS))))
+```
+
+```{r}
+ts_data <- ts(data$Close, frequency = 252, start = c(2020, 1))  # Assuming 252 trading days per year
+```
+
+```{r}
+decomposed_ts <- decompose(ts_data, type = "multiplicative")
+plot(decomposed_ts)
+```
+
+```{r}
+ggplot(data, aes(x = Date, y = Close)) +
+  geom_line(color = "blue") +
+  geom_smooth(method = "loess", color = "red", se = FALSE) +
+  labs(title = "Titan Stock Price Trend", x = "Year", y = "Closing Price") +
+  theme_minimal()
+```
+
+```{r}
+acf(ts_data, main = "Autocorrelation of Titan Stock")
+pacf(ts_data, main = "Partial Autocorrelation of Titan Stock")
+```
+
+```{r}
+data$SMA_50 <- SMA(data$Close, n = 50)
+data$SMA_100 <- SMA(data$Close, n = 100)
+
+ggplot(data, aes(x = Date)) +
+  geom_line(aes(y = Close, color = "Close Price")) +
+  geom_line(aes(y = SMA_50, color = "50-Day SMA")) +
+  geom_line(aes(y = SMA_100, color = "100-Day SMA")) +
+  labs(title = "Titan Stock Price with Moving Averages", x = "Year", y = "Price") +
+  scale_color_manual(values = c("Close Price" = "blue", "50-Day SMA" = "red", "100-Day SMA" = "green")) +
+  theme_minimal()
+```
+
+```{r}
+adf_test <- adf.test(ts_data)
+print(adf_test)
+```
+
+```{r}
+stl_decomp <- stl(ts_data, s.window = "periodic")
+plot(stl_decomp)
+```
+
