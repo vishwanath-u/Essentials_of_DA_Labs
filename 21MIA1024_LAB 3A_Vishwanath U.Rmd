@@ -1,0 +1,78 @@
+---
+title: "21MIA1024_LAB - 3_Vishwanath U"
+author: "Vishwanath U 21MIA1024"
+date: "2025-02-18"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(quantmod)
+library(e1071)
+library(ggplot2)
+library(caret)
+```
+
+```{r}
+getSymbols("TITAN.NS", src = "yahoo", from = "2020-01-01", to = Sys.Date())
+data <- na.omit(data.frame(Date = index(TITAN.NS), Close = as.numeric(Cl(TITAN.NS))))
+```
+```{r}
+data$SMA_50 <- SMA(data$Close, n = 50)
+data$SMA_100 <- SMA(data$Close, n = 100)
+data$SMA_200 <- SMA(data$Close, n = 200)
+data <- na.omit(data)
+```
+
+```{r}
+data$Target <- factor(c(NA, ifelse(diff(data$Close) > 0, "Increase",
+                                   ifelse(diff(data$Close) < 0, "Decrease", "No Change"))))
+data <- na.omit(data)
+
+```
+
+```{r}
+set.seed(123)
+trainIndex <- createDataPartition(data$Target, p = 0.8, list = FALSE)
+trainData <- data[trainIndex, ]
+testData <- data[-trainIndex, ]
+```
+
+```{r}
+model <- naiveBayes(Target ~ SMA_50 + SMA_100 + SMA_200, data = trainData)
+summary(model)
+```
+
+```{r}
+predictions <- predict(model, testData)
+predictions
+```
+
+```{r}
+confusionMatrix(factor(predictions, levels = levels(testData$Target)), testData$Target)
+```
+```{r}
+ggplot(testData, aes(x = Date, y = Close, color = predictions)) +
+  geom_line() +
+  labs(title = "Titan Stock Predictions", x = "Date", y = "Close Price") +
+  theme_minimal()
+```
+```{r}
+library(caret)
+library(ggplot2)
+
+cm <- confusionMatrix(factor(predictions, levels = levels(testData$Target)), testData$Target)
+
+cm_table <- as.data.frame(cm$table)
+
+ggplot(cm_table, aes(x = Reference, y = Prediction, fill = Freq)) +
+  geom_tile() +
+  geom_text(aes(label = Freq), color = "white", size = 5) +
+  scale_fill_gradient(low = "lightblue", high = "darkblue") +
+  labs(title = "Confusion Matrix", x = "Actual", y = "Predicted") +
+  theme_minimal()
+```
+
